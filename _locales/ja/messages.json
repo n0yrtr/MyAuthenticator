@@ -532,5 +532,9 @@
   "no_folder": {
     "message": "未分類",
     "description": "Folder tab that shows entries without a folder."
+  },
+  "folder_placeholder": {
+    "message": "フォルダ（例: 仕事/顧客A）",
+    "description": "Placeholder of the folder path input; '/' separates nested folders."
   }
 }

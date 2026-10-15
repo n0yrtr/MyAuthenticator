@@ -1,7 +1,7 @@
 import { EntryStorage, BrowserStorage, isOldKey } from "../models/storage";
 import { Encryption } from "../models/encryption";
 import * as CryptoJS from "crypto-js";
-import { OTPType, OTPAlgorithm } from "../models/otp";
+import { OTPType, OTPAlgorithm, FOLDER_SEPARATOR } from "../models/otp";
 import { ActionContext } from "vuex";
 import { getSiteName, getMatchedEntriesHash } from "../utils";
 import { isChromium } from "../browser";
@@ -70,10 +70,16 @@ export class Accounts implements Module {
           return false;
         },
         folders(state: AccountsState) {
+          // Every folder path in use, plus all of their ancestors, so a
+          // folder that only contains sub-folders still exists in the tree.
           const names = new Set<string>();
           for (const entry of state.entries) {
-            if (entry.folder) {
-              names.add(entry.folder);
+            if (!entry.folder) {
+              continue;
+            }
+            const segments = entry.folder.split(FOLDER_SEPARATOR);
+            for (let i = 1; i <= segments.length; i++) {
+              names.add(segments.slice(0, i).join(FOLDER_SEPARATOR));
             }
           }
           return Array.from(names).sort((a, b) =>

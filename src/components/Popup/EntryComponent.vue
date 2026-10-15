@@ -72,7 +72,7 @@
     <div class="issuerEdit folderEdit">
       <IconFolder />
       <input
-        v-bind:placeholder="i18n.folder"
+        v-bind:placeholder="i18n.folder_placeholder"
         type="text"
         list="folderList"
         v-model="entry.folder"
@@ -98,7 +98,13 @@
 import Vue from "vue";
 import { mapState } from "vuex";
 import * as QRGen from "qrcode-generator";
-import { OTPEntry, OTPType, CodeState, OTPAlgorithm } from "../../models/otp";
+import {
+  OTPEntry,
+  OTPType,
+  CodeState,
+  OTPAlgorithm,
+  normalizeFolder,
+} from "../../models/otp";
 import { EntryStorage } from "../../models/storage";
 import { getCurrentTab, okToInjectContentScript } from "../../utils";
 
@@ -184,7 +190,7 @@ export default Vue.extend({
       return;
     },
     async changeFolder(entry: OTPEntry) {
-      entry.folder = entry.folder.trim();
+      entry.folder = normalizeFolder(entry.folder);
       await entry.update();
     },
     async pin(entry: OTPEntry) {

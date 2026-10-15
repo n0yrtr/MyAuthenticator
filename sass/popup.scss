@@ -1369,17 +1369,78 @@ svg {
   }
 }
 
-// Folder tabs
+// Folder navigation (breadcrumb + sub-folder chips)
 #folders {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
   padding: 6px 10px 2px 10px;
   margin-left: 10px;
   font-size: 12px;
   line-height: 18px;
 
+  .folderPath {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px;
+    margin-bottom: 4px;
+
+    .crumb {
+      text-decoration: none;
+      padding: 0 4px;
+      border-radius: 3px;
+      max-width: 140px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      @include themify($themes) {
+        color: themed("blue-1");
+      }
+
+      &:hover {
+        @include themify($themes) {
+          background: themed("yellow-2");
+        }
+      }
+
+      &.active {
+        font-weight: bold;
+        cursor: default;
+        @include themify($themes) {
+          color: themed("black-1");
+        }
+      }
+    }
+
+    .crumbSep {
+      @include themify($themes) {
+        color: themed("grey-2");
+      }
+    }
+  }
+
+  .folderChildren {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
   .folderTab {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    svg {
+      width: 11px;
+      height: 11px;
+      flex: none;
+      @include themify($themes) {
+        fill: themed("grey-2");
+      }
+    }
+
+    &.unfiled {
+      font-style: italic;
+    }
+
     padding: 0 8px;
     border-radius: 9px;
     text-decoration: none;
@@ -1397,14 +1458,6 @@ svg {
     &:hover {
       @include themify($themes) {
         background: themed("yellow-2");
-      }
-    }
-
-    &.active {
-      @include themify($themes) {
-        color: themed("white-1");
-        background: themed("blue-1");
-        border-color: themed("blue-1");
       }
     }
   }

@@ -532,5 +532,9 @@
   "no_folder": {
     "message": "Unfiled",
     "description": "Folder tab that shows entries without a folder."
+  },
+  "folder_placeholder": {
+    "message": "Folder (e.g. Work/ClientA)",
+    "description": "Placeholder of the folder path input; '/' separates nested folders."
   }
 }

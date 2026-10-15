@@ -24,30 +24,54 @@
     </div>
     <!-- Folders -->
     <div id="folders" v-if="folders.length > 0">
-      <a
-        href="#"
-        v-bind:class="{ folderTab: true, active: currentFolder === '' }"
-        v-on:click.prevent="selectFolder('')"
-        >{{ i18n.all_folders }}</a
+      <!-- Breadcrumb: すべて > 親 > 子 -->
+      <div class="folderPath">
+        <a
+          href="#"
+          v-bind:class="{ crumb: true, active: currentFolder === '' }"
+          v-on:click.prevent="selectFolder('')"
+          >{{ i18n.all_folders }}</a
+        >
+        <template v-for="crumb in breadcrumbs">
+          <span class="crumbSep" :key="crumb.path + '-sep'">›</span>
+          <a
+            href="#"
+            :key="crumb.path"
+            v-bind:class="{ crumb: true, active: currentFolder === crumb.path }"
+            v-on:click.prevent="selectFolder(crumb.path)"
+            >{{ crumb.name }}</a
+          >
+        </template>
+        <template v-if="currentFolder === NO_FOLDER">
+          <span class="crumbSep">›</span>
+          <a href="#" class="crumb active" v-on:click.prevent>{{
+            i18n.no_folder
+          }}</a>
+        </template>
+      </div>
+      <!-- Sub-folders of the current folder -->
+      <div
+        class="folderChildren"
+        v-if="childFolders.length > 0 || showUnfiledTab"
       >
-      <a
-        href="#"
-        v-for="name in folders"
-        :key="name"
-        v-bind:class="{ folderTab: true, active: currentFolder === name }"
-        v-on:click.prevent="selectFolder(name)"
-        >{{ name }}</a
-      >
-      <a
-        href="#"
-        v-bind:class="{
-          folderTab: true,
-          active: currentFolder === NO_FOLDER,
-        }"
-        v-if="hasUnfiledEntries"
-        v-on:click.prevent="selectFolder(NO_FOLDER)"
-        >{{ i18n.no_folder }}</a
-      >
+        <a
+          href="#"
+          v-for="child in childFolders"
+          :key="child.path"
+          class="folderTab"
+          v-on:click.prevent="selectFolder(child.path)"
+        >
+          <IconFolder />
+          {{ child.name }}
+        </a>
+        <a
+          href="#"
+          class="folderTab unfiled"
+          v-if="showUnfiledTab"
+          v-on:click.prevent="selectFolder(NO_FOLDER)"
+          >{{ i18n.no_folder }}</a
+        >
+      </div>
     </div>
     <datalist id="folderList">
       <option v-for="name in folders" :key="name" v-bind:value="name"></option>
@@ -89,6 +113,8 @@ import { OTPEntry } from "../../models/otp";
 import { EntryStorage } from "../../models/storage";
 
 import EntryComponent from "./EntryComponent.vue";
+import { FOLDER_SEPARATOR } from "../../models/otp";
+import IconFolder from "../../../svg/folder.svg";
 
 // import IconPlus from "../../../svg/plus.svg";
 import IconKey from "../../../svg/key-solid.svg";
@@ -101,6 +127,9 @@ const computed: {
   folders: () => string[];
   currentFolder: () => string;
   hasUnfiledEntries: () => boolean;
+  showUnfiledTab: () => boolean;
+  breadcrumbs: () => { name: string; path: string }[];
+  childFolders: () => { name: string; path: string }[];
   style: () => { isEditing: boolean };
 } = {
   ...mapState("style", ["style"]),
@@ -113,6 +142,41 @@ const computed: {
   ...mapGetters("accounts", ["shouldFilter", "entries", "folders"]),
   hasUnfiledEntries(this: { entries: OTPEntry[] }) {
     return this.entries.some((entry) => !entry.folder);
+  },
+  showUnfiledTab(this: { currentFolder: string; hasUnfiledEntries: boolean }) {
+    return this.currentFolder === "" && this.hasUnfiledEntries;
+  },
+  breadcrumbs(this: { currentFolder: string }) {
+    if (this.currentFolder === "" || this.currentFolder === NO_FOLDER) {
+      return [];
+    }
+    const segments = this.currentFolder.split(FOLDER_SEPARATOR);
+    return segments.map((name, i) => ({
+      name,
+      path: segments.slice(0, i + 1).join(FOLDER_SEPARATOR),
+    }));
+  },
+  childFolders(this: { currentFolder: string; folders: string[] }) {
+    if (this.currentFolder === NO_FOLDER) {
+      return [];
+    }
+    const prefix =
+      this.currentFolder === "" ? "" : this.currentFolder + FOLDER_SEPARATOR;
+    const seen = new Set<string>();
+    const children: { name: string; path: string }[] = [];
+    for (const path of this.folders) {
+      if (prefix !== "" && !path.startsWith(prefix)) {
+        continue;
+      }
+      const rest = path.slice(prefix.length);
+      const name = rest.split(FOLDER_SEPARATOR)[0];
+      if (!name || seen.has(name)) {
+        continue;
+      }
+      seen.add(name);
+      children.push({ name, path: prefix + name });
+    }
+    return children;
   },
 };
 
@@ -135,7 +199,17 @@ export default Vue.extend({
         this.currentFolder !== NO_FOLDER &&
         !newFolders.includes(this.currentFolder)
       ) {
-        this.selectFolder("");
+        // fall back to the nearest ancestor that still exists
+        const segments = this.currentFolder.split(FOLDER_SEPARATOR);
+        let fallback = "";
+        for (let i = segments.length - 1; i > 0; i--) {
+          const candidate = segments.slice(0, i).join(FOLDER_SEPARATOR);
+          if (newFolders.includes(candidate)) {
+            fallback = candidate;
+            break;
+          }
+        }
+        this.selectFolder(fallback);
       }
     },
   },
@@ -184,7 +258,11 @@ export default Vue.extend({
       if (this.currentFolder === NO_FOLDER) {
         return !entry.folder;
       }
-      return entry.folder === this.currentFolder;
+      // A folder shows its own entries and everything in its sub-folders
+      return (
+        entry.folder === this.currentFolder ||
+        entry.folder.startsWith(this.currentFolder + FOLDER_SEPARATOR)
+      );
     },
     isEntryVisible(entry: OTPEntry) {
       return (
@@ -279,6 +357,7 @@ export default Vue.extend({
     EntryComponent,
     // IconPlus,
     IconKey,
+    IconFolder,
   },
 });
 </script>

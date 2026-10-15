@@ -34,6 +34,23 @@ export interface OTPAlgorithmSpec {
   length: number;
 }
 
+export const FOLDER_SEPARATOR = "/";
+
+/**
+ * Normalize a folder path: trims every segment, drops empty segments and
+ * joins with "/". "" means "no folder".
+ */
+export function normalizeFolder(folder: string | undefined | null): string {
+  if (!folder) {
+    return "";
+  }
+  return folder
+    .split(FOLDER_SEPARATOR)
+    .map((segment) => segment.trim())
+    .filter((segment) => segment !== "")
+    .join(FOLDER_SEPARATOR);
+}
+
 export class OTPUtil {
   static getOTPAlgorithmSpec(otpAlgorithm: OTPAlgorithm): OTPAlgorithmSpec {
     switch (otpAlgorithm) {
@@ -156,7 +173,7 @@ export class OTPEntry implements OTPEntryInterface {
     } else {
       this.pinned = false;
     }
-    this.folder = entry.folder ? entry.folder.trim() : "";
+    this.folder = normalizeFolder(entry.folder);
     if (this.type === OTPType.totp && entry.period) {
       this.period = entry.period;
     } else {
@@ -226,7 +243,7 @@ export class OTPEntry implements OTPEntryInterface {
     this.issuer = decryptedData.issuer || "";
     this.period = decryptedData.period || 30;
     this.pinned = decryptedData.pinned || false;
-    this.folder = decryptedData.folder || "";
+    this.folder = normalizeFolder(decryptedData.folder);
     this.secret = decryptedData.secret;
     // @ts-expect-error need a better way to do this
     this.type = OTPType[decryptedData.type] || OTPType.totp;
