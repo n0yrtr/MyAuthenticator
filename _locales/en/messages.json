@@ -520,5 +520,17 @@
   },
   "activate_auto_filter": {
     "message": "Warning: Smart filter loosely matches the domain name to an account. Always verify that you are on the correct website before entering a code!"
+  },
+  "folder": {
+    "message": "Folder",
+    "description": "Folder name input placeholder in edit mode."
+  },
+  "all_folders": {
+    "message": "All",
+    "description": "Folder tab that shows entries from every folder."
+  },
+  "no_folder": {
+    "message": "Unfiled",
+    "description": "Folder tab that shows entries without a folder."
   }
 }

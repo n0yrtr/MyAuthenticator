@@ -46,6 +46,7 @@ export class Accounts implements Module {
         keys: await BrowserStorage.getKeys(),
         wrongPassword: false,
         initComplete: false,
+        currentFolder: "",
       },
       getters: {
         shouldFilter(
@@ -67,6 +68,17 @@ export class Accounts implements Module {
             }
           }
           return false;
+        },
+        folders(state: AccountsState) {
+          const names = new Set<string>();
+          for (const entry of state.entries) {
+            if (entry.folder) {
+              names.add(entry.folder);
+            }
+          }
+          return Array.from(names).sort((a, b) =>
+            a.localeCompare(b, undefined, { sensitivity: "base" })
+          );
         },
         entries(state: AccountsState) {
           const pinnedEntries = state.entries.filter((entry) => entry.pinned);
@@ -149,6 +161,9 @@ export class Accounts implements Module {
               state.entries[i].index = i;
             }
           }
+        },
+        setFolder(state: AccountsState, folder: string) {
+          state.currentFolder = folder;
         },
         pinEntry(state: AccountsState, entry: OTPEntryInterface) {
           state.entries[entry.index].pinned = !entry.pinned;

@@ -76,6 +76,7 @@ interface AccountsState {
   keys: OldKey | Key[];
   wrongPassword: boolean;
   initComplete: boolean;
+  currentFolder: string;
 }
 
 interface NotificationState {

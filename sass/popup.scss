@@ -254,7 +254,8 @@ svg {
   }
 
   &.filter .entry[filtered],
-  &.search .entry[notSearched] {
+  &.search .entry[notSearched],
+  .entry[notInFolder] {
     height: 0;
     margin: 0;
     padding: 0;
@@ -1365,5 +1366,68 @@ svg {
         border-bottom: #f5f4f7 1px solid;
       }
     }
+  }
+}
+
+// Folder tabs
+#folders {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px 10px 2px 10px;
+  margin-left: 10px;
+  font-size: 12px;
+  line-height: 18px;
+
+  .folderTab {
+    padding: 0 8px;
+    border-radius: 9px;
+    text-decoration: none;
+    white-space: nowrap;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    @include themify($themes) {
+      color: themed("black-1");
+      background: themed("grey-3");
+      border: themed("grey-2") 1px solid;
+    }
+
+    &:hover {
+      @include themify($themes) {
+        background: themed("yellow-2");
+      }
+    }
+
+    &.active {
+      @include themify($themes) {
+        color: themed("white-1");
+        background: themed("blue-1");
+        border-color: themed("blue-1");
+      }
+    }
+  }
+}
+
+#codes.edit #folders {
+  display: none;
+}
+
+.entry .folderEdit {
+  margin-top: 4px;
+
+  svg {
+    width: 12px;
+    height: 12px;
+    vertical-align: middle;
+    margin-right: 4px;
+    @include themify($themes) {
+      fill: themed("grey-2");
+    }
+  }
+
+  input {
+    width: calc(70% - 16px);
   }
 }

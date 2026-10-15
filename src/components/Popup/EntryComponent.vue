@@ -69,6 +69,16 @@
         v-on:change="entry.update(encryption)"
       />
     </div>
+    <div class="issuerEdit folderEdit">
+      <IconFolder />
+      <input
+        v-bind:placeholder="i18n.folder"
+        type="text"
+        list="folderList"
+        v-model="entry.folder"
+        v-on:change="changeFolder(entry)"
+      />
+    </div>
     <div
       class="showqr"
       v-if="shouldShowQrIcon(entry)"
@@ -97,6 +107,7 @@ import IconRedo from "../../../svg/redo.svg";
 import IconQr from "../../../svg/qrcode.svg";
 import IconBars from "../../../svg/bars.svg";
 import IconPin from "../../../svg/pin.svg";
+import IconFolder from "../../../svg/folder.svg";
 
 const computedPrototype = [
   mapState("accounts", [
@@ -171,6 +182,10 @@ export default Vue.extend({
         await this.$store.dispatch("accounts/deleteCode", entry.hash);
       }
       return;
+    },
+    async changeFolder(entry: OTPEntry) {
+      entry.folder = entry.folder.trim();
+      await entry.update();
     },
     async pin(entry: OTPEntry) {
       this.$store.commit("accounts/pinEntry", entry);
@@ -254,6 +269,7 @@ export default Vue.extend({
     IconQr,
     IconBars,
     IconPin,
+    IconFolder,
   },
 });
 

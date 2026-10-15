@@ -22,6 +22,36 @@
         <div></div>
       </div>
     </div>
+    <!-- Folders -->
+    <div id="folders" v-if="folders.length > 0">
+      <a
+        href="#"
+        v-bind:class="{ folderTab: true, active: currentFolder === '' }"
+        v-on:click.prevent="selectFolder('')"
+        >{{ i18n.all_folders }}</a
+      >
+      <a
+        href="#"
+        v-for="name in folders"
+        :key="name"
+        v-bind:class="{ folderTab: true, active: currentFolder === name }"
+        v-on:click.prevent="selectFolder(name)"
+        >{{ name }}</a
+      >
+      <a
+        href="#"
+        v-bind:class="{
+          folderTab: true,
+          active: currentFolder === NO_FOLDER,
+        }"
+        v-if="hasUnfiledEntries"
+        v-on:click.prevent="selectFolder(NO_FOLDER)"
+        >{{ i18n.no_folder }}</a
+      >
+    </div>
+    <datalist id="folderList">
+      <option v-for="name in folders" :key="name" v-bind:value="name"></option>
+    </datalist>
     <!-- Entries -->
     <div
       v-dragula
@@ -36,6 +66,7 @@
         :key="entry.hash"
         v-bind:filtered="!entry.pinned && !isMatchedEntry(entry)"
         v-bind:notSearched="!isSearchedEntry(entry)"
+        v-bind:notInFolder="!isInCurrentFolder(entry)"
         v-bind:entry="entry"
         v-bind:tabindex="getTabindex(entry)"
       />
@@ -67,16 +98,46 @@ const computed: {
   showSearch: () => boolean;
   shouldFilter: () => boolean;
   entries: () => OTPEntry[];
+  folders: () => string[];
+  currentFolder: () => string;
+  hasUnfiledEntries: () => boolean;
+  style: () => { isEditing: boolean };
 } = {
-  ...mapState("accounts", ["filter", "showSearch", "initComplete"]),
-  ...mapGetters("accounts", ["shouldFilter", "entries"]),
+  ...mapState("style", ["style"]),
+  ...mapState("accounts", [
+    "filter",
+    "showSearch",
+    "initComplete",
+    "currentFolder",
+  ]),
+  ...mapGetters("accounts", ["shouldFilter", "entries", "folders"]),
+  hasUnfiledEntries(this: { entries: OTPEntry[] }) {
+    return this.entries.some((entry) => !entry.folder);
+  },
 };
+
+// Sentinel for the "unfiled" tab; cannot collide with a real folder name
+// because folder names are trimmed and this one contains control chars.
+const NO_FOLDER = "\u0000no-folder\u0000";
 
 export default Vue.extend({
   data: function () {
     return {
       searchText: "",
+      NO_FOLDER,
     };
+  },
+  watch: {
+    folders(newFolders: string[]) {
+      // Selected folder disappeared (renamed/emptied) -> back to "all"
+      if (
+        this.currentFolder !== "" &&
+        this.currentFolder !== NO_FOLDER &&
+        !newFolders.includes(this.currentFolder)
+      ) {
+        this.selectFolder("");
+      }
+    },
   },
   computed,
   methods: {
@@ -108,9 +169,27 @@ export default Vue.extend({
     clearFilter() {
       this.$store.dispatch("accounts/clearFilter");
     },
+    selectFolder(folder: string) {
+      this.$store.commit("accounts/setFolder", folder);
+      const codesEl = document.getElementById("codes") as HTMLDivElement;
+      if (codesEl) {
+        codesEl.scrollTop = 0;
+      }
+    },
+    isInCurrentFolder(entry: OTPEntry) {
+      // While editing, show every entry so folders can be assigned freely
+      if (this.style.isEditing || this.currentFolder === "") {
+        return true;
+      }
+      if (this.currentFolder === NO_FOLDER) {
+        return !entry.folder;
+      }
+      return entry.folder === this.currentFolder;
+    },
     isEntryVisible(entry: OTPEntry) {
       return (
         this.isSearchedEntry(entry) &&
+        this.isInCurrentFolder(entry) &&
         (entry.pinned ||
           !this.shouldFilter ||
           !this.filter ||

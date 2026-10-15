@@ -520,5 +520,17 @@
   },
   "activate_auto_filter": {
     "message": "警告：スマートフィルタはアカウントのドメイン名とほぼ一致します。常にあなたが正しいウェブサイトにいることを確認してください！"
+  },
+  "folder": {
+    "message": "フォルダ",
+    "description": "Folder name input placeholder in edit mode."
+  },
+  "all_folders": {
+    "message": "すべて",
+    "description": "Folder tab that shows entries from every folder."
+  },
+  "no_folder": {
+    "message": "未分類",
+    "description": "Folder tab that shows entries without a folder."
   }
 }
