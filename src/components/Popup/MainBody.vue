@@ -24,53 +24,70 @@
     </div>
     <!-- Folders -->
     <div id="folders" v-if="folders.length > 0">
-      <!-- Breadcrumb: すべて > 親 > 子 -->
-      <div class="folderPath">
+      <!-- Top-level folders: always visible -->
+      <div class="folderTop">
         <a
           href="#"
-          v-bind:class="{ crumb: true, active: currentFolder === '' }"
+          v-bind:class="{ folderTab: true, active: currentFolder === '' }"
           v-on:click.prevent="selectFolder('')"
           >{{ i18n.all_folders }}</a
         >
-        <template v-for="crumb in breadcrumbs">
-          <span class="crumbSep" :key="crumb.path + '-sep'">›</span>
-          <a
-            href="#"
-            :key="crumb.path"
-            v-bind:class="{ crumb: true, active: currentFolder === crumb.path }"
-            v-on:click.prevent="selectFolder(crumb.path)"
-            >{{ crumb.name }}</a
-          >
-        </template>
-        <template v-if="currentFolder === NO_FOLDER">
-          <span class="crumbSep">›</span>
-          <a href="#" class="crumb active" v-on:click.prevent>{{
-            i18n.no_folder
-          }}</a>
-        </template>
-      </div>
-      <!-- Sub-folders of the current folder -->
-      <div
-        class="folderChildren"
-        v-if="childFolders.length > 0 || showUnfiledTab"
-      >
         <a
           href="#"
-          v-for="child in childFolders"
-          :key="child.path"
-          class="folderTab"
-          v-on:click.prevent="selectFolder(child.path)"
+          v-for="top in topFolders"
+          :key="top.path"
+          v-bind:class="{ folderTab: true, active: isUnderFolder(top.path) }"
+          v-on:click.prevent="selectFolder(top.path)"
         >
           <IconFolder />
-          {{ child.name }}
+          {{ top.name }}
         </a>
         <a
           href="#"
-          class="folderTab unfiled"
-          v-if="showUnfiledTab"
+          v-bind:class="{
+            folderTab: true,
+            unfiled: true,
+            active: currentFolder === NO_FOLDER,
+          }"
+          v-if="hasUnfiledEntries"
           v-on:click.prevent="selectFolder(NO_FOLDER)"
           >{{ i18n.no_folder }}</a
         >
+      </div>
+      <!-- Inside a folder: breadcrumb (from 2nd level) + sub-folders -->
+      <div
+        class="folderSub"
+        v-if="breadcrumbs.length > 1 || childFolders.length > 0"
+      >
+        <div class="folderPath" v-if="breadcrumbs.length > 1">
+          <template v-for="(crumb, i) in breadcrumbs">
+            <span class="crumbSep" v-if="i > 0" :key="crumb.path + '-sep'"
+              >›</span
+            >
+            <a
+              href="#"
+              :key="crumb.path"
+              v-bind:class="{
+                crumb: true,
+                active: currentFolder === crumb.path,
+              }"
+              v-on:click.prevent="selectFolder(crumb.path)"
+              >{{ crumb.name }}</a
+            >
+          </template>
+        </div>
+        <div class="folderChildren" v-if="childFolders.length > 0">
+          <a
+            href="#"
+            v-for="child in childFolders"
+            :key="child.path"
+            class="folderTab child"
+            v-on:click.prevent="selectFolder(child.path)"
+          >
+            <IconFolder />
+            {{ child.name }}
+          </a>
+        </div>
       </div>
     </div>
     <datalist id="folderList">
@@ -127,7 +144,7 @@ const computed: {
   folders: () => string[];
   currentFolder: () => string;
   hasUnfiledEntries: () => boolean;
-  showUnfiledTab: () => boolean;
+  topFolders: () => { name: string; path: string }[];
   breadcrumbs: () => { name: string; path: string }[];
   childFolders: () => { name: string; path: string }[];
   style: () => { isEditing: boolean };
@@ -143,8 +160,8 @@ const computed: {
   hasUnfiledEntries(this: { entries: OTPEntry[] }) {
     return this.entries.some((entry) => !entry.folder);
   },
-  showUnfiledTab(this: { currentFolder: string; hasUnfiledEntries: boolean }) {
-    return this.currentFolder === "" && this.hasUnfiledEntries;
+  topFolders(this: { folders: string[] }) {
+    return childrenOf("", this.folders);
   },
   breadcrumbs(this: { currentFolder: string }) {
     if (this.currentFolder === "" || this.currentFolder === NO_FOLDER) {
@@ -157,28 +174,31 @@ const computed: {
     }));
   },
   childFolders(this: { currentFolder: string; folders: string[] }) {
-    if (this.currentFolder === NO_FOLDER) {
+    if (this.currentFolder === "" || this.currentFolder === NO_FOLDER) {
       return [];
     }
-    const prefix =
-      this.currentFolder === "" ? "" : this.currentFolder + FOLDER_SEPARATOR;
-    const seen = new Set<string>();
-    const children: { name: string; path: string }[] = [];
-    for (const path of this.folders) {
-      if (prefix !== "" && !path.startsWith(prefix)) {
-        continue;
-      }
-      const rest = path.slice(prefix.length);
-      const name = rest.split(FOLDER_SEPARATOR)[0];
-      if (!name || seen.has(name)) {
-        continue;
-      }
-      seen.add(name);
-      children.push({ name, path: prefix + name });
-    }
-    return children;
+    return childrenOf(this.currentFolder, this.folders);
   },
 };
+
+/** Direct sub-folders of `parent` ("" = root) among all folder paths. */
+function childrenOf(parent: string, folders: string[]) {
+  const prefix = parent === "" ? "" : parent + FOLDER_SEPARATOR;
+  const seen = new Set<string>();
+  const children: { name: string; path: string }[] = [];
+  for (const path of folders) {
+    if (prefix !== "" && !path.startsWith(prefix)) {
+      continue;
+    }
+    const name = path.slice(prefix.length).split(FOLDER_SEPARATOR)[0];
+    if (!name || seen.has(name)) {
+      continue;
+    }
+    seen.add(name);
+    children.push({ name, path: prefix + name });
+  }
+  return children;
+}
 
 // Sentinel for the "unfiled" tab; cannot collide with a real folder name
 // because folder names are trimmed and this one contains control chars.
@@ -249,6 +269,12 @@ export default Vue.extend({
       if (codesEl) {
         codesEl.scrollTop = 0;
       }
+    },
+    isUnderFolder(folder: string) {
+      return (
+        this.currentFolder === folder ||
+        this.currentFolder.startsWith(folder + FOLDER_SEPARATOR)
+      );
     },
     isInCurrentFolder(entry: OTPEntry) {
       // While editing, show every entry so folders can be assigned freely

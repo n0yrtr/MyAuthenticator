@@ -1376,6 +1376,20 @@ svg {
   font-size: 12px;
   line-height: 18px;
 
+  .folderTop {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .folderSub {
+    margin-top: 4px;
+    padding: 4px 0 2px 6px;
+    @include themify($themes) {
+      border-left: themed("grey-2") 2px solid;
+    }
+  }
+
   .folderPath {
     display: flex;
     flex-wrap: wrap;
@@ -1439,6 +1453,26 @@ svg {
 
     &.unfiled {
       font-style: italic;
+    }
+
+    &.active {
+      @include themify($themes) {
+        color: themed("white-1");
+        background: themed("blue-1");
+        border-color: themed("blue-1");
+      }
+
+      svg {
+        @include themify($themes) {
+          fill: themed("white-1");
+        }
+      }
+    }
+
+    &.child {
+      @include themify($themes) {
+        background: themed("white-1");
+      }
     }
 
     padding: 0 8px;
